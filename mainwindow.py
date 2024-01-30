@@ -22,11 +22,12 @@ class MainWindow(QMainWindow):
         self.ui_path = resource_path("form.ui")
         uic.loadUi(self.ui_path,self)
         self.get_versions_list()
-        self.kernel_version.currentIndexChanged.connect(self.selectionChanged)
-        self.kernel_list.currentIndexChanged.connect(self.kernel_selectionChanged)
-        self.get_number_of_cores()
         self.version = ''
         self.kernel = ''
+        self.cores = ''
+        self.kernel_version.currentIndexChanged.connect(self.selectionChanged)
+        self.kernel_list.currentIndexChanged.connect(self.kernel_selectionChanged)
+        self.cores_list.currentIndexChanged.connect(self.get_number_of_cores)
         self.submit.clicked.connect(lambda:self.install_kernel(self.version,self.kernel))
 
     def get_versions_list(self):
@@ -80,6 +81,7 @@ class MainWindow(QMainWindow):
         result,out,err = self.run_process('nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null')
         if result == 0:
             cores = int(out)
+            self.cores=cores
             self.cores_list.addItems([str(i) for i in range(1,cores)])
         else:
             print(f'error! --> {result.stderr}')
