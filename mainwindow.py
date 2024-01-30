@@ -106,6 +106,7 @@ class MainWindow(QMainWindow):
         else:
             try:
                 os.mkdir('/usr/src')
+                os.chdir('/usr/src')
             except Exception as e :
                 print(e)
         call(f"wget --continue http://kernel.org/pub/linux/kernel/{version}/{kernel}",shell=True)
@@ -116,7 +117,7 @@ class MainWindow(QMainWindow):
         print("current kernel version is : %s\n" % current_kernel)
         # Start by cleaning up
         call("make distclean; make mrproper", shell=True)
-        os.cp("/boot/config-%s"%current_kernel,"./.config")
+        self.run_process("/boot/config-"+current_kernel+" ./.config")
         call("make nconfig",shell=True)
         # The below commands can be merged into one
         call("make", shell=True)
