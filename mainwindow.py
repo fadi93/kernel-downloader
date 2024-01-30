@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
     def run_process(self,cmd):
         result = subprocess.Popen(cmd,stdout=PIPE,stderr=PIPE,shell=True)
         out,err = result.communicate()
-        return result.returncode,out.decode('utf-8'),err
+        return result.returncode,out.decode('utf-8').strip(),err.decode('utf-8').strip()
 
 
     def get_extracted_folder_name(self):
@@ -117,12 +117,12 @@ class MainWindow(QMainWindow):
         print("current kernel version is : %s\n" % current_kernel)
         # Start by cleaning up
         call("make distclean; make mrproper", shell=True)
-        self.run_process("/boot/config-"+current_kernel+" ./.config")
-        call("make nconfig",shell=True)
+        self.run_process("cp /boot/config-"+current_kernel+" ./.config")
+        self.run_process("scripts/config --disable SYSTEM_TRUSTED_KEYS ; scripts/config --disable SYSTEM_REVOCATION_KEYS")
         # The below commands can be merged into one
-        call("make", shell=True)
-        call("make modules_install", shell=True)
-        call("make install", shell=True)
+        call("y|make -j "+self.cores, shell=True)
+        call("make modules_install -j "+self.cores, shell=True)
+        call("make install -j "+self.cores, shell=True)
         print("Done installing the Kernel\n")
 
 if __name__ == "__main__":
