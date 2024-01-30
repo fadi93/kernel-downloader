@@ -7,7 +7,7 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5 import uic
 from bs4 import BeautifulSoup
 import re,subprocess
-from subprocess import call
+from subprocess import call,PIPE
 
 def resource_path(relative_path):
         try:
@@ -77,12 +77,24 @@ class MainWindow(QMainWindow):
             print("Failed to retrieve data from the website.")
 
     def get_number_of_cores(self):
-        result = subprocess.run('nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null',capture_output=True,text=True,shell=True)
-        if result.returncode == 0:
-            cores = int(result.stdout.strip())
+        result,out,err = self.run_process('nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null')
+        if result == 0:
+            cores = int(out)
             self.cores_list.addItems([str(i) for i in range(1,cores)])
         else:
             print(f'error! --> {result.stderr}')
+
+    def run_process(self,cmd):
+        result = subprocess.Popen(cmd,stdout=PIPE,stderr=PIPE,shell=True)
+        out,err = result.communicate()
+        return result.returncode,out.decode('utf-8'),err
+
+
+    def get_extracted_folder_name(self):
+        result,out,err = self.run_process("tar -tzvf /usr/src/linux-2.3.18.tar.gz | head -n 1 | awk '{print $NF}'")
+        if result == 0:
+            return out
+        return err
 
     def install_kernel(self,version,kernel):
         if  version == ''  or kernel == '' :
@@ -95,8 +107,20 @@ class MainWindow(QMainWindow):
             except Exception as e :
                 print(e)
         call(f"wget --continue http://kernel.org/pub/linux/kernel/{version}/{kernel}",shell=True)
-
-
+        kernel_version = self.get_extracted_folder_name()
+        call("tar -xvf %s" % kernel,shell=True)
+        os.chdir("%s" % kernel_version)
+        status,current_kernel,err=self.run_process('uname -r')
+        print("current kernel version is : %s\n" % current_kernel)
+        # Start by cleaning up
+        call("make distclean; make mrproper", shell=True)
+        os.cp("/boot/config-%s"%current_kernel,"./.config")
+        call("make nconfig",shell=True)
+        # The below commands can be merged into one
+        call("make", shell=True)
+        call("make modules_install", shell=True)
+        call("make install", shell=True)
+        print("Done installing the Kernel\n")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
