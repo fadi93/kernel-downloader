@@ -22,12 +22,14 @@ class MainWindow(QMainWindow):
         self.ui_path = resource_path("form.ui")
         uic.loadUi(self.ui_path,self)
         self.get_versions_list()
+        self.get_kernel_list('v1.0')
+        self.get_number_of_cores()
         self.version = ''
-        self.kernel = ''
+        self.kernel = 'v1.0'
         self.cores = ''
         self.kernel_version.currentIndexChanged.connect(self.selectionChanged)
         self.kernel_list.currentIndexChanged.connect(self.kernel_selectionChanged)
-        self.cores_list.currentIndexChanged.connect(self.get_number_of_cores)
+        self.cores_list.currentIndexChanged.connect(self.cores_selection_changed)
         self.submit.clicked.connect(lambda:self.install_kernel(self.version,self.kernel))
 
     def get_versions_list(self):
@@ -76,6 +78,11 @@ class MainWindow(QMainWindow):
                 self.kernel_list.addItems(tar_files_names)
         else:
             print("Failed to retrieve data from the website.")
+
+    @pyqtSlot(int)
+    def cores_selection_changed(self,index):
+        self.cores = self.cores_list.itemText(index)
+        print(self.cores)
 
     def get_number_of_cores(self):
         result,out,err = self.run_process('nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null')
